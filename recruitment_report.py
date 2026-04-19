@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import io
-from streamlit_gsheets import GSheetsConnection
 
 # ======================
 # PAGE CONFIG
@@ -27,19 +26,19 @@ with col_title:
     )
 
 # ======================
-# CONNECTION
+# REFRESH BUTTON
 # ======================
-conn = st.connection("gsheets", type=GSheetsConnection)
+if st.button("🔄 Refresh Data"):
+    st.cache_data.clear()
 
 # ======================
-# LOAD MAIN DATA
+# LOAD MAIN DATA (CSV)
 # ======================
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60)
 def load_data():
     try:
-        return conn.read(
-            spreadsheet="1eysrca2wIWsx2LZeP3z2qlRawLzdRBYxsDf6JizcaZc"
-        )
+        url = "https://docs.google.com/spreadsheets/d/1eysrca2wIWsx2LZeP3z2qlRawLzdRBYxsDf6JizcaZc/export?format=csv"
+        return pd.read_csv(url)
     except Exception as e:
         st.error(f"Error load main data: {e}")
         return pd.DataFrame()
@@ -139,16 +138,13 @@ st.divider()
 st.header("MPP Dashboard")
 
 # ======================
-# LOAD MPP (SAFE MODE)
+# LOAD MPP (CSV METHOD)
 # ======================
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60)
 def load_mpp():
     try:
-        df = conn.read(
-            spreadsheet="10A2o_8D_C5d0HWl1ve6WNn9V7AdSqSufLnWr3lKtR9I",
-            worksheet="mpp"
-        )
-        return df
+        url = "https://docs.google.com/spreadsheets/d/10A2o_8D_C5d0HWl1ve6WNn9V7AdSqSufLnWr3lKtR9I/export?format=csv&gid=0"
+        return pd.read_csv(url)
     except Exception as e:
         st.error(f"Error load MPP: {e}")
         return pd.DataFrame()
@@ -156,7 +152,7 @@ def load_mpp():
 mpp = load_mpp()
 
 if mpp.empty:
-    st.warning("MPP data tidak berhasil dimuat. Cek sharing & nama sheet.")
+    st.warning("MPP data gagal dimuat. Cek sharing & gid.")
 else:
     st.success("MPP Loaded ✅")
 
@@ -211,10 +207,8 @@ else:
 
         pivot = pivot_df.groupby("divisi").sum(numeric_only=True)
 
-        # TOTAL
         pivot["TOTAL"] = pivot.sum(axis=1)
 
-        # DISPLAY
         st.dataframe(
             pivot.style.format("{:,.0f}"),
             use_container_width=True
