@@ -207,8 +207,6 @@ else:
 
         pivot = pivot_df.groupby("divisi").sum(numeric_only=True)
 
-        pivot["TOTAL"] = pivot.sum(axis=1)
-
         st.dataframe(
             pivot.style.format("{:,.0f}"),
             use_container_width=True
