@@ -12,6 +12,18 @@ st.set_page_config(
 
 st.title("Recruitment Dashboard")
 
+
+col_logo, col_title = st.columns([1, 8])
+
+with col_logo:
+    st.image("logo_solid.png", width=100)
+
+with col_title:
+    st.markdown(
+        "<h1 style='padding-top:20px;'>Recruitment Dashboard</h1>",
+        unsafe_allow_html=True
+    )
+
 # ======================
 # CONNECT GOOGLE SHEETS
 # ======================
