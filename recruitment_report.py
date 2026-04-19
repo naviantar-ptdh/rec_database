@@ -7,7 +7,7 @@ import io
 # PAGE CONFIG
 # ======================
 st.set_page_config(
-    page_title="Recruitment Dashboard",
+    page_title="Recruitment Database",
     layout="wide"
 )
 
