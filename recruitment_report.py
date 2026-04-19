@@ -1,24 +1,17 @@
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
-st.title("Recruitment Dashboard (Google Sheets)")
+st.title("Recruitment Dashboard")
 
-# connect
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# read data
-df = conn.read(
-    spreadsheet="https://docs.google.com/spreadsheets/d/1eysrca2wIWsx2LZeP3z2qlRawLzdRBYxsDf6JizcaZc",
-)
+@st.cache_data(ttl=300)
+def load_data():
+    return conn.read(
+        spreadsheet="1eysrca2wIWsx2LZeP3z2qlRawLzdRBYxsDf6JizcaZc"
+    )
 
-# display
+df = load_data()
+
 st.dataframe(df)
-
-# KPI simple
 st.metric("Total Candidate", len(df))
-
-# filter
-if "level" in df.columns:
-    level = st.selectbox("Select Level", sorted(df["level"].dropna().unique()))
-    filtered_df = df[df["level"] == level]
-    st.dataframe(filtered_df)
