@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📊 Recruitment Dashboard")
+st.title("Recruitment Dashboard")
 
 # ======================
 # CONNECT GOOGLE SHEETS
@@ -33,10 +33,8 @@ if df.empty:
     st.warning("No data available")
     st.stop()
 
-# standarize column name (optional)
 df.columns = df.columns.str.lower()
 
-# handle missing value
 if "level" in df.columns:
     df["level"] = df["level"].fillna("Unknown")
 
@@ -44,9 +42,11 @@ if "position" in df.columns:
     df["position"] = df["position"].fillna("Unknown")
 
 # ======================
-# SIDEBAR FILTER
+# FILTER SECTION (TOP DROPDOWN)
 # ======================
-st.sidebar.header("🔎 Filter")
+st.subheader("Filter")
+
+col1, col2 = st.columns(2)
 
 filtered_df = df.copy()
 
@@ -54,68 +54,61 @@ filtered_df = df.copy()
 if "level" in df.columns:
     level_options = sorted(df["level"].dropna().unique())
 
-    selected_levels = st.sidebar.multiselect(
-        "Level",
-        level_options,
-        default=level_options
+    selected_level = col1.selectbox(
+        "Select Level",
+        ["All"] + level_options
     )
 
-    filtered_df = filtered_df[
-        filtered_df["level"].isin(selected_levels)
-    ]
+    if selected_level != "All":
+        filtered_df = filtered_df[
+            filtered_df["level"] == selected_level
+        ]
 
 # FILTER POSITION
 if "position" in df.columns:
     pos_options = sorted(df["position"].dropna().unique())
 
-    selected_pos = st.sidebar.multiselect(
-        "Position",
-        pos_options,
-        default=pos_options
+    selected_pos = col2.selectbox(
+        "Select Position",
+        ["All"] + pos_options
     )
 
-    filtered_df = filtered_df[
-        filtered_df["position"].isin(selected_pos)
-    ]
+    if selected_pos != "All":
+        filtered_df = filtered_df[
+            filtered_df["position"] == selected_pos
+        ]
 
 # ======================
 # KPI SECTION
 # ======================
-st.subheader("📈 Summary")
+st.subheader("Summary")
 
-col1, col2, col3 = st.columns(3)
+k1, k2, k3 = st.columns(3)
 
-col1.metric("Total Candidate", len(df))
-col2.metric("Filtered Candidate", len(filtered_df))
+k1.metric("Total Candidate", len(df))
+k2.metric("Filtered Candidate", len(filtered_df))
 
-# contoh KPI tambahan
-if "level" in df.columns:
-    col3.metric("Unique Level", filtered_df["level"].nunique())
-else:
-    col3.metric("Unique Level", "-")
-
-# ======================
-# SIMPLE ANALYTICS
-# ======================
-st.subheader("📊 Analytics")
-
-col1, col2 = st.columns(2)
-
-# COUNT BY LEVEL
 if "level" in filtered_df.columns:
-    level_count = filtered_df["level"].value_counts()
+    k3.metric("Unique Level", filtered_df["level"].nunique())
+else:
+    k3.metric("Unique Level", "-")
 
-    col1.bar_chart(level_count)
+# ======================
+# ANALYTICS
+# ======================
+st.subheader("Analytics")
 
-# COUNT BY POSITION
+c1, c2 = st.columns(2)
+
+if "level" in filtered_df.columns:
+    c1.bar_chart(filtered_df["level"].value_counts())
+
 if "position" in filtered_df.columns:
-    pos_count = filtered_df["position"].value_counts()
-
-    col2.bar_chart(pos_count)
+    c2.bar_chart(filtered_df["position"].value_counts())
 
 # ======================
 # DATA TABLE
 # ======================
-st.subheader("📋 Data Detail")
+st.subheader("Data Detail")
 
 st.dataframe(filtered_df, use_container_width=True)
