@@ -21,7 +21,7 @@ with col_logo:
 
 with col_title:
     st.markdown(
-        "<h1 style='margin:0;'>Recruitment Dashboard</h1>",
+        "<h1 style='margin:0;'>Recruitment Database</h1>",
         unsafe_allow_html=True
     )
 
