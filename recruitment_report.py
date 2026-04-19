@@ -5,7 +5,7 @@ import io
 from streamlit_gsheets import GSheetsConnection
 
 # ======================
-# PAGE CONFIG (HANYA SEKALI)
+# PAGE CONFIG
 # ======================
 st.set_page_config(
     page_title="Recruitment Dashboard",
@@ -36,9 +36,13 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 # ======================
 @st.cache_data(ttl=300)
 def load_data():
-    return conn.read(
-        spreadsheet="1eysrca2wIWsx2LZeP3z2qlRawLzdRBYxsDf6JizcaZc"
-    )
+    try:
+        return conn.read(
+            spreadsheet="1eysrca2wIWsx2LZeP3z2qlRawLzdRBYxsDf6JizcaZc"
+        )
+    except Exception as e:
+        st.error(f"Error load main data: {e}")
+        return pd.DataFrame()
 
 df = load_data()
 
@@ -134,21 +138,33 @@ st.dataframe(filtered_df, use_container_width=True)
 st.divider()
 st.header("MPP Dashboard")
 
-# LOAD MPP
+# ======================
+# LOAD MPP (SAFE MODE)
+# ======================
 @st.cache_data(ttl=300)
 def load_mpp():
-    return conn.read(
-        spreadsheet="10A2o_8D_C5d0HWl1ve6WNn9V7AdSqSufLnWr3lKtR9I",
-        worksheet="mpp",
-        usecols="B:U"
-    )
+    try:
+        df = conn.read(
+            spreadsheet="10A2o_8D_C5d0HWl1ve6WNn9V7AdSqSufLnWr3lKtR9I",
+            worksheet="mpp"
+        )
+        return df
+    except Exception as e:
+        st.error(f"Error load MPP: {e}")
+        return pd.DataFrame()
 
 mpp = load_mpp()
 
-if not mpp.empty:
+if mpp.empty:
+    st.warning("MPP data tidak berhasil dimuat. Cek sharing & nama sheet.")
+else:
+    st.success("MPP Loaded ✅")
+
     mpp.columns = mpp.columns.str.lower()
 
+    # ======================
     # FILTER MPP
+    # ======================
     f1, f2 = st.columns(2)
     mpp_filtered = mpp.copy()
 
@@ -174,62 +190,67 @@ if not mpp.empty:
         if lvl_sel != "All":
             mpp_filtered = mpp_filtered[mpp_filtered["level"] == lvl_sel]
 
-    # SELECT + RENAME
-    pivot_df = mpp_filtered[[
-        "divisi",
-        "2026(r)",
-        "2026(a)",
-        "talent_management",
-        "gap_fullfill_rec"
-    ]].copy()
-
-    pivot_df = pivot_df.rename(columns={
-        "2026(r)": "MPP",
-        "2026(a)": "Existing",
-        "talent_management": "ADP_2026",
-        "gap_fullfill_rec": "GAP"
-    })
-
+    # ======================
     # PIVOT
-    pivot = pivot_df.groupby("divisi").sum(numeric_only=True)
-
-    # TOTAL
-    pivot["TOTAL"] = pivot.sum(axis=1)
-
-    # DISPLAY
-    st.dataframe(
-        pivot.style.format("{:,.0f}"),
-        use_container_width=True
-    )
-
     # ======================
-    # EXPORT IMAGE
-    # ======================
-    def create_table_image(df):
-        fig, ax = plt.subplots(figsize=(12, 5))
-        ax.axis('off')
+    try:
+        pivot_df = mpp_filtered[[
+            "divisi",
+            "2026(r)",
+            "2026(a)",
+            "talent_management",
+            "gap_fullfill_rec"
+        ]].copy()
 
-        table = ax.table(
-            cellText=df.values,
-            colLabels=df.columns,
-            rowLabels=df.index,
-            loc='center'
+        pivot_df = pivot_df.rename(columns={
+            "2026(r)": "MPP",
+            "2026(a)": "Existing",
+            "talent_management": "ADP_2026",
+            "gap_fullfill_rec": "GAP"
+        })
+
+        pivot = pivot_df.groupby("divisi").sum(numeric_only=True)
+
+        # TOTAL
+        pivot["TOTAL"] = pivot.sum(axis=1)
+
+        # DISPLAY
+        st.dataframe(
+            pivot.style.format("{:,.0f}"),
+            use_container_width=True
         )
 
-        table.auto_set_font_size(False)
-        table.set_fontsize(10)
-        table.scale(1, 1.5)
+        # ======================
+        # EXPORT IMAGE
+        # ======================
+        def create_table_image(df):
+            fig, ax = plt.subplots(figsize=(12, 5))
+            ax.axis('off')
 
-        buf = io.BytesIO()
-        plt.savefig(buf, bbox_inches='tight')
-        buf.seek(0)
-        return buf
+            table = ax.table(
+                cellText=df.values,
+                colLabels=df.columns,
+                rowLabels=df.index,
+                loc='center'
+            )
 
-    img = create_table_image(pivot)
+            table.auto_set_font_size(False)
+            table.set_fontsize(10)
+            table.scale(1, 1.5)
 
-    st.download_button(
-        label="Download MPP as Image",
-        data=img,
-        file_name="mpp_pivot.png",
-        mime="image/png"
-    )
+            buf = io.BytesIO()
+            plt.savefig(buf, bbox_inches='tight')
+            buf.seek(0)
+            return buf
+
+        img = create_table_image(pivot)
+
+        st.download_button(
+            label="Download MPP as Image",
+            data=img,
+            file_name="mpp_pivot.png",
+            mime="image/png"
+        )
+
+    except Exception as e:
+        st.error(f"Error saat pivot: {e}")
