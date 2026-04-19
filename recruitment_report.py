@@ -6,21 +6,21 @@ from streamlit_gsheets import GSheetsConnection
 # PAGE CONFIG
 # ======================
 st.set_page_config(
-    page_title="Recruitment Dashboard",
+    page_title="Recruitment Database",
     layout="wide"
 )
 
-st.title("Recruitment Dashboard")
-
-
-col_logo, col_title = st.columns([1, 8])
+# ======================
+# HEADER (LOGO + TITLE SEJAJAR)
+# ======================
+col_logo, col_title = st.columns([1, 8], vertical_alignment="center")
 
 with col_logo:
-    st.image("logo_solid.png", width=100)
+    st.image("logo_solid.png", width=70)
 
 with col_title:
     st.markdown(
-        "<h1 style='padding-top:20px;'>Recruitment Dashboard</h1>",
+        "<h1 style='margin:0;'>Recruitment Database</h1>",
         unsafe_allow_html=True
     )
 
@@ -54,12 +54,11 @@ if "position" in df.columns:
     df["position"] = df["position"].fillna("Unknown")
 
 # ======================
-# FILTER SECTION (TOP DROPDOWN)
+# FILTER SECTION
 # ======================
 st.subheader("Filter")
 
 col1, col2 = st.columns(2)
-
 filtered_df = df.copy()
 
 # FILTER LEVEL
@@ -95,15 +94,10 @@ if "position" in df.columns:
 # ======================
 st.subheader("Summary")
 
-k1, k2, k3 = st.columns(3)
+k1, k2 = st.columns(2)
 
 k1.metric("Total Candidate", len(df))
 k2.metric("Filtered Candidate", len(filtered_df))
-
-if "level" in filtered_df.columns:
-    k3.metric("Unique Level", filtered_df["level"].nunique())
-else:
-    k3.metric("Unique Level", "-")
 
 # ======================
 # ANALYTICS
