@@ -192,6 +192,12 @@ else:
     })
 
     pivot = pivot_df.groupby("divisi").sum(numeric_only=True)
-    pivot["TOTAL"] = pivot.sum(axis=1)
+
 
     st.dataframe(pivot, use_container_width=True)
+st.download_button(
+    label="Download MPP as Image",
+    data=img,
+    file_name="mpp_pivot.png",
+    mime="image/png"
+)
