@@ -213,28 +213,62 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
     start_date = col_d1.date_input("Start Date", key="pipe_start")
     end_date = col_d2.date_input("End Date", key="pipe_end")
 
-
     # ======================
-    # FILTER MPP (BARU 🔥)
+    # FILTER MPP (GLOBAL FILTER 🔥)
     # ======================
-    f4, f5, f6 = st.columns(3)
+    f1, f2, f3 = st.columns(3)
 
     mpp_filtered = mpp.copy()
 
+    # default value biar aman
+    lvl_mpp = "All"
+    loc_mpp = "All"
+    st_mpp = "All"
+
     if "level" in mpp_filtered.columns:
-        lvl_mpp = f4.selectbox("Level (MPP)", ["All"] + sorted(mpp_filtered["level"].dropna().unique()), key="pipe_mpp_level")
+        lvl_mpp = f1.selectbox(
+            "Level", 
+            ["All"] + sorted(mpp_filtered["level"].dropna().unique()), 
+            key="pipe_mpp_level"
+        )
         if lvl_mpp != "All":
             mpp_filtered = mpp_filtered[mpp_filtered["level"] == lvl_mpp]
 
     if "loc" in mpp_filtered.columns:
-        loc_mpp = f5.selectbox("Location (MPP)", ["All"] + sorted(mpp_filtered["loc"].dropna().unique()), key="pipe_mpp_loc")
+        loc_mpp = f2.selectbox(
+            "Location", 
+            ["All"] + sorted(mpp_filtered["loc"].dropna().unique()), 
+            key="pipe_mpp_loc"
+        )
         if loc_mpp != "All":
             mpp_filtered = mpp_filtered[mpp_filtered["loc"] == loc_mpp]
 
     if "status" in mpp_filtered.columns:
-        st_mpp = f6.selectbox("Status (MPP)", ["All"] + sorted(mpp_filtered["status"].dropna().unique()), key="pipe_mpp_status")
+        st_mpp = f3.selectbox(
+            "Status", 
+            ["All"] + sorted(mpp_filtered["status"].dropna().unique()), 
+            key="pipe_mpp_status"
+        )
         if st_mpp != "All":
-            mpp_filtered = mpp_filtered[mpp_filtered["status"].str.upper() == st_mpp.upper()]
+            mpp_filtered = mpp_filtered[
+                mpp_filtered["status"].str.upper() == st_mpp.upper()
+            ]
+
+    # ======================
+    # APPLY FILTER KE REC 🔥
+    # ======================
+    df_pipeline = df.copy()
+
+    if "level" in df_pipeline.columns and lvl_mpp != "All":
+        df_pipeline = df_pipeline[df_pipeline["level"] == lvl_mpp]
+
+    if "loc" in df_pipeline.columns and loc_mpp != "All":
+        df_pipeline = df_pipeline[df_pipeline["loc"] == loc_mpp]
+
+    if "status" in df_pipeline.columns and st_mpp != "All":
+        df_pipeline = df_pipeline[
+            df_pipeline["status"].str.upper() == st_mpp.upper()
+        ]
 
     # ======================
     # PREPARE DATE
@@ -318,4 +352,7 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
 
     final_table = final_table.reset_index()
 
+    # ======================
+    # OUTPUT
+    # ======================
     st.dataframe(final_table, use_container_width=True)
