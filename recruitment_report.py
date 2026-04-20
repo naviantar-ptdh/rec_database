@@ -201,7 +201,7 @@ with st.expander("📈 MPP Dashboard", expanded=False):
         # ========== MPP vs RECRUITMENT PIPELINE ===================
         # =========================================================
         
-        with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
+    with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
         
             st.subheader("Pipeline Analysis")
         
