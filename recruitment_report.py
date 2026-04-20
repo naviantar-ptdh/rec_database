@@ -203,7 +203,7 @@ with st.expander("📈 MPP Dashboard", expanded=False):
 
 with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
 
-    st.subheader("Pipeline Analysis")
+    st.subheader("Pipeline Analysis (By Departement)")
 
     # ======================
     # DATE FILTER
@@ -214,10 +214,41 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
     end_date = col_d2.date_input("End Date", key="pipe_end")
 
     # ======================
-    # PREPARE RECRUITMENT DATA
+    # FILTER TAMBAHAN (REC)
     # ======================
+    f1, f2, f3 = st.columns(3)
+
     df_pipeline = df.copy()
 
+    # LEVEL
+    if "level" in df_pipeline.columns:
+        lvl_opt = ["All"] + sorted(df_pipeline["level"].dropna().unique())
+        lvl_sel = f1.selectbox("Level", lvl_opt, key="pipe_level")
+
+        if lvl_sel != "All":
+            df_pipeline = df_pipeline[df_pipeline["level"] == lvl_sel]
+
+    # LOCATION
+    if "loc" in df_pipeline.columns:
+        loc_opt = ["All"] + sorted(df_pipeline["loc"].dropna().unique())
+        loc_sel = f2.selectbox("Location", loc_opt, key="pipe_loc")
+
+        if loc_sel != "All":
+            df_pipeline = df_pipeline[df_pipeline["loc"] == loc_sel]
+
+    # STATUS
+    if "status" in df_pipeline.columns:
+        st_opt = ["All"] + sorted(df_pipeline["status"].dropna().unique())
+        st_sel = f3.selectbox("Status", st_opt, key="pipe_status")
+
+        if st_sel != "All":
+            df_pipeline = df_pipeline[
+                df_pipeline["status"].str.upper() == st_sel.upper()
+            ]
+
+    # ======================
+    # PREPARE DATE
+    # ======================
     date_cols = [
         "start_screening_cv",
         "start_interview_hr",
@@ -235,11 +266,11 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
             df_pipeline[col] = pd.to_datetime(df_pipeline[col], errors="coerce")
 
     # ======================
-    # FUNCTION COUNT
+    # COUNT FUNCTION
     # ======================
     def count_stage(col_name):
         if col_name not in df_pipeline.columns:
-            return pd.Series()
+            return pd.Series(dtype=float)
 
         temp = df_pipeline[
             (df_pipeline[col_name] >= pd.to_datetime(start_date)) &
@@ -249,7 +280,7 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
         return temp.groupby("departement")[col_name].count()
 
     # ======================
-    # PIPELINE SUMMARY
+    # PIPELINE
     # ======================
     pipeline = pd.DataFrame()
 
@@ -266,36 +297,42 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
     pipeline = pipeline.fillna(0)
 
     # ======================
-    # MPP SUMMARY
+    # MPP SUMMARY (BY DEPARTEMENT + DIVISI)
     # ======================
     mpp_dept = mpp.copy()
 
-    if "departement" in mpp_dept.columns:
+    mpp_dept.columns = mpp_dept.columns.str.lower()
 
-        mpp_summary = mpp_dept.groupby("departement")[[
-            "2026(r)",
-            "2026(a)",
-            "talent_management",
-            "gap_fullfill_rec"
-        ]].sum(numeric_only=True)
+    mpp_summary = mpp_dept.groupby(["divisi", "departement"])[[
+        "2026(r)",
+        "2026(a)",
+        "talent_management",
+        "gap_fullfill_rec"
+    ]].sum(numeric_only=True)
 
-        mpp_summary = mpp_summary.rename(columns={
-            "2026(r)": "MPP",
-            "2026(a)": "Existing",
-            "talent_management": "ADP 2026",
-            "gap_fullfill_rec": "GAP"
-        })
+    mpp_summary = mpp_summary.rename(columns={
+        "2026(r)": "MPP",
+        "2026(a)": "Existing",
+        "talent_management": "ADP 2026",
+        "gap_fullfill_rec": "GAP"
+    })
 
-        # ======================
-        # MERGE
-        # ======================
-        final_table = mpp_summary.merge(
-            pipeline,
-            left_index=True,
-            right_index=True,
-            how="left"
-        ).fillna(0)
+    # ======================
+    # MERGE
+    # ======================
+    final_table = mpp_summary.merge(
+        pipeline,
+        left_on="departement",
+        right_index=True,
+        how="left"
+    ).fillna(0)
 
+    # ======================
+    # RESET INDEX BIAR RAPI
+    # ======================
+    final_table = final_table.reset_index()
+
+    st.dataframe(final_table, use_container_width=True)
         st.dataframe(final_table, use_container_width=True)
 
     else:
