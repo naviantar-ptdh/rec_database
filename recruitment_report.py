@@ -203,7 +203,7 @@ with st.expander("📈 MPP Dashboard", expanded=False):
 
 with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
 
-    st.subheader("Pipeline Analysis (By Divisi)")
+    st.subheader("Pipeline Analysis")
 
     # ======================
     # DATE FILTER
@@ -214,32 +214,10 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
     end_date = col_d2.date_input("End Date", key="pipe_end")
 
     # ======================
-    # PREPARE DATA
+    # PREPARE RECRUITMENT DATA
     # ======================
     df_pipeline = df.copy()
-    mpp_map = mpp.copy()
 
-    # normalize column
-    df_pipeline.columns = df_pipeline.columns.str.lower()
-    mpp_map.columns = mpp_map.columns.str.lower()
-
-    # ======================
-    # 🔥 FIX: MAP DIVISI FROM MPP → REC
-    # ======================
-    if "positionid" in mpp_map.columns:
-        mpp_map = mpp_map.rename(columns={"positionid": "position_id"})
-
-    mapping = mpp_map[["position_id", "divisi"]].drop_duplicates()
-
-    df_pipeline = df_pipeline.merge(
-        mapping,
-        on="position_id",
-        how="left"
-    )
-
-    # ======================
-    # CONVERT DATE
-    # ======================
     date_cols = [
         "start_screening_cv",
         "start_interview_hr",
@@ -257,29 +235,21 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
             df_pipeline[col] = pd.to_datetime(df_pipeline[col], errors="coerce")
 
     # ======================
-    # FILTER DATE RANGE
-    # ======================
-    df_pipeline = df_pipeline[
-        (df_pipeline[date_cols].min(axis=1) >= pd.to_datetime(start_date)) &
-        (df_pipeline[date_cols].min(axis=1) <= pd.to_datetime(end_date))
-    ]
-
-    # ======================
-    # COUNT FUNCTION
+    # FUNCTION COUNT
     # ======================
     def count_stage(col_name):
         if col_name not in df_pipeline.columns:
-            return pd.Series(dtype=float)
+            return pd.Series()
 
         temp = df_pipeline[
             (df_pipeline[col_name] >= pd.to_datetime(start_date)) &
             (df_pipeline[col_name] <= pd.to_datetime(end_date))
         ]
 
-        return temp.groupby("divisi")[col_name].count()
+        return temp.groupby("departement")[col_name].count()
 
     # ======================
-    # PIPELINE TABLE
+    # PIPELINE SUMMARY
     # ======================
     pipeline = pd.DataFrame()
 
@@ -296,30 +266,37 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
     pipeline = pipeline.fillna(0)
 
     # ======================
-    # MPP SUMMARY (BY DIVISI)
+    # MPP SUMMARY
     # ======================
-    mpp_summary = mpp_map.groupby("divisi")[[
-        "2026(r)",
-        "2026(a)",
-        "talent_management",
-        "gap_fullfill_rec"
-    ]].sum(numeric_only=True)
+    mpp_dept = mpp.copy()
 
-    mpp_summary = mpp_summary.rename(columns={
-        "2026(r)": "MPP",
-        "2026(a)": "Existing",
-        "talent_management": "ADP 2026",
-        "gap_fullfill_rec": "GAP"
-    })
+    if "departement" in mpp_dept.columns:
 
-    # ======================
-    # MERGE FINAL
-    # ======================
-    final_table = mpp_summary.merge(
-        pipeline,
-        left_index=True,
-        right_index=True,
-        how="left"
-    ).fillna(0)
+        mpp_summary = mpp_dept.groupby("departement")[[
+            "2026(r)",
+            "2026(a)",
+            "talent_management",
+            "gap_fullfill_rec"
+        ]].sum(numeric_only=True)
 
-    st.dataframe(final_table, use_container_width=True)
+        mpp_summary = mpp_summary.rename(columns={
+            "2026(r)": "MPP",
+            "2026(a)": "Existing",
+            "talent_management": "ADP 2026",
+            "gap_fullfill_rec": "GAP"
+        })
+
+        # ======================
+        # MERGE
+        # ======================
+        final_table = mpp_summary.merge(
+            pipeline,
+            left_index=True,
+            right_index=True,
+            how="left"
+        ).fillna(0)
+
+        st.dataframe(final_table, use_container_width=True)
+
+    else:
+        st.warning("Kolom 'departement' tidak ditemukan di MPP")
