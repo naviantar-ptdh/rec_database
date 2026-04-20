@@ -201,24 +201,24 @@ with st.expander("📈 MPP Dashboard", expanded=False):
         # ========== MPP vs RECRUITMENT PIPELINE ===================
         # =========================================================
         
-    with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
+with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
         
-            st.subheader("Pipeline Analysis")
+        st.subheader("Pipeline Analysis")
         
-            # ======================
-            # DATE FILTER
-            # ======================
-            col_d1, col_d2 = st.columns(2)
+        # ======================
+        # DATE FILTER
+        # ======================
+        col_d1, col_d2 = st.columns(2)
         
-            start_date = col_d1.date_input("Start Date", key="pipe_start")
-            end_date = col_d2.date_input("End Date", key="pipe_end")
+        start_date = col_d1.date_input("Start Date", key="pipe_start")
+        end_date = col_d2.date_input("End Date", key="pipe_end")
         
             # ======================
             # PREPARE RECRUITMENT DATA
             # ======================
-            df_pipeline = df.copy()
+        df_pipeline = df.copy()
         
-            date_cols = [
+        date_cols = [
                 "start_screening_cv",
                 "start_interview_hr",
                 "start_interview_user",
@@ -230,56 +230,56 @@ with st.expander("📈 MPP Dashboard", expanded=False):
                 "date_onboarding"
             ]
         
-            for col in date_cols:
-                if col in df_pipeline.columns:
+        for col in date_cols:
+            if col in df_pipeline.columns:
                     df_pipeline[col] = pd.to_datetime(df_pipeline[col], errors="coerce")
         
             # ======================
             # FUNCTION COUNT
             # ======================
-            def count_stage(col_name):
-                if col_name not in df_pipeline.columns:
-                    return pd.Series()
+        def count_stage(col_name):
+            if col_name not in df_pipeline.columns:
+                return pd.Series()
         
-                temp = df_pipeline[
+            temp = df_pipeline[
                     (df_pipeline[col_name] >= pd.to_datetime(start_date)) &
                     (df_pipeline[col_name] <= pd.to_datetime(end_date))
                 ]
         
-                return temp.groupby("departement")[col_name].count()
+            return temp.groupby("departement")[col_name].count()
         
             # ======================
             # PIPELINE SUMMARY
             # ======================
-            pipeline = pd.DataFrame()
+        pipeline = pd.DataFrame()
         
-            pipeline["Screening CV"] = count_stage("start_screening_cv")
-            pipeline["HR Interview"] = count_stage("start_interview_hr")
-            pipeline["User Interview"] = count_stage("start_interview_user")
-            pipeline["Psychotest"] = count_stage("start_psychotest")
-            pipeline["Offering"] = count_stage("start_offering")
-            pipeline["MCU"] = count_stage("start_mcu")
-            pipeline["Review MCU"] = count_stage("start_review_mcu")
-            pipeline["FU MCU"] = count_stage("start_fu_mcu")
-            pipeline["Onboarding"] = count_stage("date_onboarding")
+        pipeline["Screening CV"] = count_stage("start_screening_cv")
+        pipeline["HR Interview"] = count_stage("start_interview_hr")
+        pipeline["User Interview"] = count_stage("start_interview_user")
+        pipeline["Psychotest"] = count_stage("start_psychotest")
+        pipeline["Offering"] = count_stage("start_offering")
+        pipeline["MCU"] = count_stage("start_mcu")
+        pipeline["Review MCU"] = count_stage("start_review_mcu")
+        pipeline["FU MCU"] = count_stage("start_fu_mcu")
+        pipeline["Onboarding"] = count_stage("date_onboarding")
         
-            pipeline = pipeline.fillna(0)
+        pipeline = pipeline.fillna(0)
         
             # ======================
             # MPP SUMMARY
             # ======================
-            mpp_dept = mpp.copy()
+        mpp_dept = mpp.copy()
         
-            if "departement" in mpp_dept.columns:
+        if "departement" in mpp_dept.columns:
         
-                mpp_summary = mpp_dept.groupby("departement")[[
+            mpp_summary = mpp_dept.groupby("departement")[[
                     "2026(r)",
                     "2026(a)",
                     "talent_management",
                     "gap_fullfill_rec"
                 ]].sum(numeric_only=True)
         
-                mpp_summary = mpp_summary.rename(columns={
+            mpp_summary = mpp_summary.rename(columns={
                     "2026(r)": "MPP",
                     "2026(a)": "Existing",
                     "talent_management": "ADP 2026",
@@ -289,14 +289,14 @@ with st.expander("📈 MPP Dashboard", expanded=False):
                 # ======================
                 # MERGE
                 # ======================
-                final_table = mpp_summary.merge(
-                    pipeline,
-                    left_index=True,
-                    right_index=True,
-                    how="left"
-                ).fillna(0)
+            final_table = mpp_summary.merge(
+                pipeline,
+                left_index=True,
+                right_index=True,
+                how="left"
+            ).fillna(0)
         
-                st.dataframe(final_table, use_container_width=True)
+            st.dataframe(final_table, use_container_width=True)
         
-            else:
-                st.warning("Kolom 'departement' tidak ditemukan di MPP")
+        else:
+            st.warning("Kolom 'departement' tidak ditemukan di MPP")
