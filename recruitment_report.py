@@ -3,6 +3,26 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import io
 
+def create_table_image(df):
+    fig, ax = plt.subplots(figsize=(14, 6))
+    ax.axis('off')
+
+    table = ax.table(
+        cellText=df.values,
+        colLabels=df.columns,
+        rowLabels=df.index if df.index.name else None,
+        loc='center'
+    )
+
+    table.auto_set_font_size(False)
+    table.set_fontsize(9)
+    table.scale(1, 1.5)
+
+    buf = io.BytesIO()
+    plt.savefig(buf, bbox_inches='tight')
+    buf.seek(0)
+    return buf
+
 # ======================
 # PAGE CONFIG
 # ======================
@@ -156,6 +176,15 @@ with st.expander("📈 MPP Dashboard", expanded=False):
     pivot = pivot_df.groupby("divisi").sum(numeric_only=True)
 
     st.dataframe(pivot, use_container_width=True)
+    # DOWNLOAD IMAGE MPP
+    img_mpp = create_table_image(pivot)
+
+    st.download_button(
+        label="Download MPP as Image",
+        data=img_mpp,
+        file_name="mpp_dashboard.png",
+        mime="image/png"
+)
 
 # =========================================================
 # ========== MPP vs RECRUITMENT PIPELINE ===================
@@ -246,3 +275,12 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
     final_table = final_table.reset_index()
 
     st.dataframe(final_table, use_container_width=True)
+    # DOWNLOAD IMAGE PIPELINE
+    img_pipeline = create_table_image(final_table)
+    
+    st.download_button(
+        label="Download Pipeline as Image",
+        data=img_pipeline,
+        file_name="mpp_vs_pipeline.png",
+        mime="image/png"
+    )
