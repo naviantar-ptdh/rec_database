@@ -214,37 +214,48 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
     end_date = col_d2.date_input("End Date", key="pipe_end")
 
     # ======================
-    # FILTER TAMBAHAN (REC)
+    # FILTER REC
     # ======================
     f1, f2, f3 = st.columns(3)
 
     df_pipeline = df.copy()
 
-    # LEVEL
     if "level" in df_pipeline.columns:
-        lvl_opt = ["All"] + sorted(df_pipeline["level"].dropna().unique())
-        lvl_sel = f1.selectbox("Level", lvl_opt, key="pipe_level")
-
+        lvl_sel = f1.selectbox("Level", ["All"] + sorted(df_pipeline["level"].unique()), key="pipe_level")
         if lvl_sel != "All":
             df_pipeline = df_pipeline[df_pipeline["level"] == lvl_sel]
 
-    # LOCATION
     if "loc" in df_pipeline.columns:
-        loc_opt = ["All"] + sorted(df_pipeline["loc"].dropna().unique())
-        loc_sel = f2.selectbox("Location", loc_opt, key="pipe_loc")
-
+        loc_sel = f2.selectbox("Location", ["All"] + sorted(df_pipeline["loc"].unique()), key="pipe_loc")
         if loc_sel != "All":
             df_pipeline = df_pipeline[df_pipeline["loc"] == loc_sel]
 
-    # STATUS
     if "status" in df_pipeline.columns:
-        st_opt = ["All"] + sorted(df_pipeline["status"].dropna().unique())
-        st_sel = f3.selectbox("Status", st_opt, key="pipe_status")
-
+        st_sel = f3.selectbox("Status", ["All"] + sorted(df_pipeline["status"].unique()), key="pipe_status")
         if st_sel != "All":
-            df_pipeline = df_pipeline[
-                df_pipeline["status"].str.upper() == st_sel.upper()
-            ]
+            df_pipeline = df_pipeline[df_pipeline["status"].str.upper() == st_sel.upper()]
+
+    # ======================
+    # FILTER MPP (BARU 🔥)
+    # ======================
+    f4, f5, f6 = st.columns(3)
+
+    mpp_filtered = mpp.copy()
+
+    if "level" in mpp_filtered.columns:
+        lvl_mpp = f4.selectbox("Level (MPP)", ["All"] + sorted(mpp_filtered["level"].dropna().unique()), key="pipe_mpp_level")
+        if lvl_mpp != "All":
+            mpp_filtered = mpp_filtered[mpp_filtered["level"] == lvl_mpp]
+
+    if "loc" in mpp_filtered.columns:
+        loc_mpp = f5.selectbox("Location (MPP)", ["All"] + sorted(mpp_filtered["loc"].dropna().unique()), key="pipe_mpp_loc")
+        if loc_mpp != "All":
+            mpp_filtered = mpp_filtered[mpp_filtered["loc"] == loc_mpp]
+
+    if "status" in mpp_filtered.columns:
+        st_mpp = f6.selectbox("Status (MPP)", ["All"] + sorted(mpp_filtered["status"].dropna().unique()), key="pipe_mpp_status")
+        if st_mpp != "All":
+            mpp_filtered = mpp_filtered[mpp_filtered["status"].str.upper() == st_mpp.upper()]
 
     # ======================
     # PREPARE DATE
@@ -297,10 +308,9 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
     pipeline = pipeline.fillna(0)
 
     # ======================
-    # MPP SUMMARY (BY DEPARTEMENT + DIVISI)
+    # MPP SUMMARY
     # ======================
-    mpp_dept = mpp.copy()
-
+    mpp_dept = mpp_filtered.copy()
     mpp_dept.columns = mpp_dept.columns.str.lower()
 
     mpp_summary = mpp_dept.groupby(["divisi", "departement"])[[
@@ -327,13 +337,6 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
         how="left"
     ).fillna(0)
 
-    # ======================
-    # RESET INDEX BIAR RAPI
-    # ======================
     final_table = final_table.reset_index()
 
     st.dataframe(final_table, use_container_width=True)
-        st.dataframe(final_table, use_container_width=True)
-
-    else:
-        st.warning("Kolom 'departement' tidak ditemukan di MPP")
