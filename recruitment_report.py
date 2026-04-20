@@ -213,27 +213,6 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
     start_date = col_d1.date_input("Start Date", key="pipe_start")
     end_date = col_d2.date_input("End Date", key="pipe_end")
 
-    # ======================
-    # FILTER REC
-    # ======================
-    f1, f2, f3 = st.columns(3)
-
-    df_pipeline = df.copy()
-
-    if "level" in df_pipeline.columns:
-        lvl_sel = f1.selectbox("Level", ["All"] + sorted(df_pipeline["level"].unique()), key="pipe_level")
-        if lvl_sel != "All":
-            df_pipeline = df_pipeline[df_pipeline["level"] == lvl_sel]
-
-    if "loc" in df_pipeline.columns:
-        loc_sel = f2.selectbox("Location", ["All"] + sorted(df_pipeline["loc"].unique()), key="pipe_loc")
-        if loc_sel != "All":
-            df_pipeline = df_pipeline[df_pipeline["loc"] == loc_sel]
-
-    if "status" in df_pipeline.columns:
-        st_sel = f3.selectbox("Status", ["All"] + sorted(df_pipeline["status"].unique()), key="pipe_status")
-        if st_sel != "All":
-            df_pipeline = df_pipeline[df_pipeline["status"].str.upper() == st_sel.upper()]
 
     # ======================
     # FILTER MPP (BARU 🔥)
