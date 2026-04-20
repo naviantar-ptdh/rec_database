@@ -197,51 +197,76 @@ with st.expander("📈 MPP Dashboard", expanded=False):
             mime="image/png"
         )
 
-        # =========================================================
-        # ========== MPP vs RECRUITMENT PIPELINE ===================
-        # =========================================================
-        
-with st.expander("📊 MPP vs Recruitment Pipeline (Divisi)", expanded=False):
+# =========================================================
+# ========== MPP vs RECRUITMENT PIPELINE ===================
+# =========================================================
+
+with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
+
+    st.subheader("Pipeline Analysis")
 
     # ======================
-    # MAP DIVISI
+    # FILTER
     # ======================
-    if "positionid" in mpp.columns:
-        mapping = mpp[["positionid", "divisi"]].drop_duplicates()
-        mapping = mapping.rename(columns={"positionid": "position_id"})
-        df = df.merge(mapping, on="position_id", how="left")
+    f1, f2, f3 = st.columns(3)
 
-    df["divisi"] = df["divisi"].fillna("Unknown")
+    status_filter = f1.selectbox(
+        "Status",
+        ["All"] + sorted(df["status"].dropna().unique()),
+        key="pipe_status"
+    )
+
+    level_filter = f2.selectbox(
+        "Level",
+        ["All"] + sorted(df["level"].dropna().unique()),
+        key="pipe_level"
+    )
+
+    loc_filter = f3.selectbox(
+        "Location",
+        ["All"] + sorted(df["loc"].dropna().unique()),
+        key="pipe_loc"
+    )
 
     # ======================
     # DATE FILTER
     # ======================
-    col_d1, col_d2 = st.columns(2)
-    start_date = col_d1.date_input("Start Date", key="pipe_start")
-    end_date = col_d2.date_input("End Date", key="pipe_end")
+    d1, d2 = st.columns(2)
+    start_date = d1.date_input("Start Date", key="pipe_start")
+    end_date = d2.date_input("End Date", key="pipe_end")
 
     # ======================
-    # FILTER TAMBAHAN
+    # PREPARE DATA
     # ======================
-    f1, f2, f3 = st.columns(3)
-
-    status_sel = f1.selectbox("Status", ["All"] + sorted(df["status"].unique()), key="pipe_status")
-    level_sel = f2.selectbox("Level", ["All"] + sorted(df["level"].unique()), key="pipe_level")
-    loc_sel = f3.selectbox("Location", ["All"] + sorted(df["loc"].unique()), key="pipe_loc")
-
     df_pipeline = df.copy()
 
-    if status_sel != "All":
-        df_pipeline = df_pipeline[df_pipeline["status"] == status_sel]
+    # APPLY FILTER
+    if status_filter != "All":
+        df_pipeline = df_pipeline[df_pipeline["status"] == status_filter]
 
-    if level_sel != "All":
-        df_pipeline = df_pipeline[df_pipeline["level"] == level_sel]
+    if level_filter != "All":
+        df_pipeline = df_pipeline[df_pipeline["level"] == level_filter]
 
-    if loc_sel != "All":
-        df_pipeline = df_pipeline[df_pipeline["loc"] == loc_sel]
+    if loc_filter != "All":
+        df_pipeline = df_pipeline[df_pipeline["loc"] == loc_filter]
 
     # ======================
-    # DATE CONVERT
+    # 🔥 JOIN POSITION_ID → DIVISI
+    # ======================
+    if "positionid" in mpp.columns:
+        mapping = mpp[["positionid", "divisi"]].drop_duplicates()
+
+        df_pipeline = df_pipeline.merge(
+            mapping,
+            left_on="position_id",
+            right_on="positionid",
+            how="left"
+        )
+    else:
+        st.error("Kolom positionid tidak ada di MPP")
+
+    # ======================
+    # DATE COLUMNS
     # ======================
     date_cols = [
         "start_screening_cv",
@@ -259,14 +284,25 @@ with st.expander("📊 MPP vs Recruitment Pipeline (Divisi)", expanded=False):
         if col in df_pipeline.columns:
             df_pipeline[col] = pd.to_datetime(df_pipeline[col], errors="coerce")
 
-    def count_stage(col):
-        temp = df_pipeline[
-            (df_pipeline[col] >= pd.to_datetime(start_date)) &
-            (df_pipeline[col] <= pd.to_datetime(end_date))
-        ]
-        return temp.groupby("divisi")[col].count()
+    # ======================
+    # FUNCTION COUNT BY DIVISI
+    # ======================
+    def count_stage(col_name):
+        if col_name not in df_pipeline.columns:
+            return pd.Series()
 
+        temp = df_pipeline[
+            (df_pipeline[col_name] >= pd.to_datetime(start_date)) &
+            (df_pipeline[col_name] <= pd.to_datetime(end_date))
+        ]
+
+        return temp.groupby("divisi")[col_name].count()
+
+    # ======================
+    # PIPELINE
+    # ======================
     pipeline = pd.DataFrame()
+
     pipeline["Screening CV"] = count_stage("start_screening_cv")
     pipeline["HR Interview"] = count_stage("start_interview_hr")
     pipeline["User Interview"] = count_stage("start_interview_user")
@@ -280,7 +316,7 @@ with st.expander("📊 MPP vs Recruitment Pipeline (Divisi)", expanded=False):
     pipeline = pipeline.fillna(0)
 
     # ======================
-    # MPP SUMMARY
+    # MPP SUMMARY BY DIVISI
     # ======================
     mpp_summary = mpp.groupby("divisi")[[
         "2026(r)",
@@ -297,13 +333,13 @@ with st.expander("📊 MPP vs Recruitment Pipeline (Divisi)", expanded=False):
     })
 
     # ======================
-    # MERGE
+    # FINAL MERGE
     # ======================
-    final = mpp_summary.merge(
+    final_table = mpp_summary.merge(
         pipeline,
         left_index=True,
         right_index=True,
         how="left"
     ).fillna(0)
 
-    st.dataframe(final, use_container_width=True)
+    st.dataframe(final_table, use_container_width=True)
