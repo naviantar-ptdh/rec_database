@@ -203,70 +203,42 @@ with st.expander("📈 MPP Dashboard", expanded=False):
 
 with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
 
-    st.subheader("Pipeline Analysis")
-
-    # ======================
-    # FILTER
-    # ======================
-    f1, f2, f3 = st.columns(3)
-
-    status_filter = f1.selectbox(
-        "Status",
-        ["All"] + sorted(df["status"].dropna().unique()),
-        key="pipe_status"
-    )
-
-    level_filter = f2.selectbox(
-        "Level",
-        ["All"] + sorted(df["level"].dropna().unique()),
-        key="pipe_level"
-    )
-
-    loc_filter = f3.selectbox(
-        "Location",
-        ["All"] + sorted(df["loc"].dropna().unique()),
-        key="pipe_loc"
-    )
+    st.subheader("Pipeline Analysis (By Divisi)")
 
     # ======================
     # DATE FILTER
     # ======================
-    d1, d2 = st.columns(2)
-    start_date = d1.date_input("Start Date", key="pipe_start")
-    end_date = d2.date_input("End Date", key="pipe_end")
+    col_d1, col_d2 = st.columns(2)
+
+    start_date = col_d1.date_input("Start Date", key="pipe_start")
+    end_date = col_d2.date_input("End Date", key="pipe_end")
 
     # ======================
     # PREPARE DATA
     # ======================
     df_pipeline = df.copy()
+    mpp_map = mpp.copy()
 
-    # APPLY FILTER
-    if status_filter != "All":
-        df_pipeline = df_pipeline[df_pipeline["status"] == status_filter]
-
-    if level_filter != "All":
-        df_pipeline = df_pipeline[df_pipeline["level"] == level_filter]
-
-    if loc_filter != "All":
-        df_pipeline = df_pipeline[df_pipeline["loc"] == loc_filter]
+    # normalize column
+    df_pipeline.columns = df_pipeline.columns.str.lower()
+    mpp_map.columns = mpp_map.columns.str.lower()
 
     # ======================
-    # 🔥 JOIN POSITION_ID → DIVISI
+    # 🔥 FIX: MAP DIVISI FROM MPP → REC
     # ======================
-    if "positionid" in mpp.columns:
-        mapping = mpp[["positionid", "divisi"]].drop_duplicates()
+    if "positionid" in mpp_map.columns:
+        mpp_map = mpp_map.rename(columns={"positionid": "position_id"})
 
-        df_pipeline = df_pipeline.merge(
-            mapping,
-            left_on="position_id",
-            right_on="positionid",
-            how="left"
-        )
-    else:
-        st.error("Kolom positionid tidak ada di MPP")
+    mapping = mpp_map[["position_id", "divisi"]].drop_duplicates()
+
+    df_pipeline = df_pipeline.merge(
+        mapping,
+        on="position_id",
+        how="left"
+    )
 
     # ======================
-    # DATE COLUMNS
+    # CONVERT DATE
     # ======================
     date_cols = [
         "start_screening_cv",
@@ -285,11 +257,19 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
             df_pipeline[col] = pd.to_datetime(df_pipeline[col], errors="coerce")
 
     # ======================
-    # FUNCTION COUNT BY DIVISI
+    # FILTER DATE RANGE
+    # ======================
+    df_pipeline = df_pipeline[
+        (df_pipeline[date_cols].min(axis=1) >= pd.to_datetime(start_date)) &
+        (df_pipeline[date_cols].min(axis=1) <= pd.to_datetime(end_date))
+    ]
+
+    # ======================
+    # COUNT FUNCTION
     # ======================
     def count_stage(col_name):
         if col_name not in df_pipeline.columns:
-            return pd.Series()
+            return pd.Series(dtype=float)
 
         temp = df_pipeline[
             (df_pipeline[col_name] >= pd.to_datetime(start_date)) &
@@ -299,7 +279,7 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
         return temp.groupby("divisi")[col_name].count()
 
     # ======================
-    # PIPELINE
+    # PIPELINE TABLE
     # ======================
     pipeline = pd.DataFrame()
 
@@ -316,9 +296,9 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
     pipeline = pipeline.fillna(0)
 
     # ======================
-    # MPP SUMMARY BY DIVISI
+    # MPP SUMMARY (BY DIVISI)
     # ======================
-    mpp_summary = mpp.groupby("divisi")[[
+    mpp_summary = mpp_map.groupby("divisi")[[
         "2026(r)",
         "2026(a)",
         "talent_management",
@@ -333,7 +313,7 @@ with st.expander("📊 MPP vs Recruitment Pipeline", expanded=False):
     })
 
     # ======================
-    # FINAL MERGE
+    # MERGE FINAL
     # ======================
     final_table = mpp_summary.merge(
         pipeline,
