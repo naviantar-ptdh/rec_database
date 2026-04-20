@@ -12,7 +12,7 @@ st.set_page_config(
 )
 
 # ======================
-# HEADER
+# HEADER (MAIN TITLE)
 # ======================
 col_logo, col_title = st.columns([1, 8], vertical_alignment="center")
 
@@ -56,10 +56,7 @@ for col in ["level", "position", "status", "loc"]:
 # =========================================================
 
 with st.expander("📊 Recruitment Database", expanded=True):
- st.header("Recruitment Database")
-    # ======================
-    # FILTER MAIN
-    # ======================
+
     st.subheader("Filter")
 
     col1, col2, col3 = st.columns(3)
@@ -80,9 +77,7 @@ with st.expander("📊 Recruitment Database", expanded=True):
         if loc != "All":
             filtered_df = filtered_df[filtered_df["loc"] == loc]
 
-    # ======================
     # KPI
-    # ======================
     st.subheader("Summary")
 
     k1, k2 = st.columns(2)
@@ -101,9 +96,7 @@ with st.expander("📊 Recruitment Database", expanded=True):
         s2.metric("Failed", (status_series == "FAILED").sum())
         s3.metric("Hiring", (status_series == "CLOSE").sum())
 
-    # ======================
     # ANALYTICS
-    # ======================
     st.subheader("Analytics")
 
     c1, c2 = st.columns(2)
@@ -114,9 +107,7 @@ with st.expander("📊 Recruitment Database", expanded=True):
     if "position" in filtered_df.columns:
         c2.bar_chart(filtered_df["position"].value_counts())
 
-    # ======================
     # TABLE
-    # ======================
     st.subheader("Data Detail")
     st.dataframe(filtered_df, use_container_width=True)
 
@@ -125,8 +116,6 @@ with st.expander("📊 Recruitment Database", expanded=True):
 # =========================================================
 
 with st.expander("📈 MPP Dashboard", expanded=False):
-
-    st.header("MPP Dashboard")
 
     @st.cache_data(ttl=60)
     def load_mpp():
@@ -142,7 +131,6 @@ with st.expander("📈 MPP Dashboard", expanded=False):
 
         mpp.columns = mpp.columns.str.lower()
 
-        # FILTER
         f1, f2, f3 = st.columns(3)
         mpp_filtered = mpp.copy()
 
@@ -161,7 +149,6 @@ with st.expander("📈 MPP Dashboard", expanded=False):
             if status_sel != "All":
                 mpp_filtered = mpp_filtered[mpp_filtered["status"].str.upper() == status_sel.upper()]
 
-        # PIVOT
         pivot_df = mpp_filtered[[
             "divisi",
             "2026(r)",
@@ -181,9 +168,6 @@ with st.expander("📈 MPP Dashboard", expanded=False):
 
         st.dataframe(pivot, use_container_width=True)
 
-        # ======================
-        # CREATE IMAGE
-        # ======================
         def create_table_image(df):
             fig, ax = plt.subplots(figsize=(12, 5))
             ax.axis('off')
@@ -206,9 +190,6 @@ with st.expander("📈 MPP Dashboard", expanded=False):
 
         img = create_table_image(pivot)
 
-        # ======================
-        # DOWNLOAD BUTTON
-        # ======================
         st.download_button(
             label="Download MPP as Image",
             data=img,
