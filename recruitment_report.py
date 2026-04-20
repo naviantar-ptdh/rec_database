@@ -7,7 +7,7 @@ import io
 # PAGE CONFIG
 # ======================
 st.set_page_config(
-    page_title="Recruitment Database",
+    page_title="Recruitment Report",
     layout="wide"
 )
 
@@ -21,7 +21,7 @@ with col_logo:
 
 with col_title:
     st.markdown(
-        "<h1 style='margin:0;'>Recruitment Database</h1>",
+        "<h1 style='margin:0;'>Recruitment Report</h1>",
         unsafe_allow_html=True
     )
 
@@ -56,7 +56,7 @@ for col in ["level", "position", "status", "loc"]:
 # =========================================================
 
 with st.expander("📊 Recruitment Database", expanded=True):
-
+ st.header("Recruitment Database")
     # ======================
     # FILTER MAIN
     # ======================
